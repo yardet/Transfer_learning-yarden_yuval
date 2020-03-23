@@ -1,4 +1,4 @@
-classes=80
-train=data/coco1.txt
-valid=data/coco1.txt
-names=data/coco.names
+classes=12
+train=../train/train_images_roboflow.txt
+valid=../valid/valid_images_roboflow.txt
+names=../train/darknet.labels
