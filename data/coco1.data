@@ -1,4 +1,4 @@
 classes=12
-train=../train/train_images_roboflow.txt
-valid=../valid/valid_images_roboflow.txt
+train=../train/images/train_images_roboflow.txt
+valid=../valid/images/valid_images_roboflow.txt
 names=../train/darknet.labels
