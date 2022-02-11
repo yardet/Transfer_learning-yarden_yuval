@@ -209,6 +209,7 @@ def train():
                                 world_size=1,  # number of nodes for distributed training
                                 rank=0)  # distributed training node rank
         model = torch.nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)
+        
         model.yolo_layers = model.module.yolo_layers  # move yolo layer indices to top level
 
     # Dataset
@@ -263,6 +264,8 @@ def train():
     t0 = time.time()
     print('Using %g dataloader workers' % nw)
     print('Starting training for %g epochs...' % epochs)
+    running_loss = 0.0
+
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
 
@@ -357,7 +360,11 @@ def train():
             # end batch ------------------------------------------------------------------------------------------------
 
             # ...log the running loss yarden
-            writer.add_scalar('training loss',   mloss ,  epoch * len(dataloader) + i)
+            running_loss += loss.item()
+
+            writer.add_scalar('training loss',   running_loss ,  epoch* len(dataloader) + i)
+
+
 
             # ...log a Matplotlib Figure showing the model's predictions on a
             # random mini-batch
