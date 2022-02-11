@@ -1,5 +1,5 @@
 import argparse
-
+from torch.utils.tensorboard import SummaryWriter#YARDEN
 import torch.distributed as dist
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
@@ -14,6 +14,9 @@ try:  # Mixed precision training https://github.com/NVIDIA/apex
     from apex import amp
 except:
     mixed_precision = False  # not installed
+
+# default `log_dir` is "runs" - we'll be more specific here-YARDEN
+writer = SummaryWriter('logs')
 
 wdir = 'weights' + os.sep  # weights dir
 last = wdir + 'last.pt'
@@ -47,7 +50,54 @@ if f:
     print('Using %s' % f[0])
     for k, v in zip(hyp.keys(), np.loadtxt(f[0])):
         hyp[k] = v
+# helper function to show an image
 
+
+classes = ('HL', 'HR', 'YL', 'YR')
+
+# (used in the `plot_classes_preds` function below)
+def matplotlib_imshow(img, one_channel=False):
+    if one_channel:
+        img = img.mean(dim=0)
+    img = img / 2 + 0.5     # unnormalize
+    npimg = img.numpy()
+    if one_channel:
+        plt.imshow(npimg, cmap="Greys")
+    else:
+        plt.imshow(np.transpose(npimg, (1, 2, 0)))
+
+def images_to_probs(net, images):
+    '''
+    Generates predictions and corresponding probabilities from a trained
+    network and a list of images
+    '''
+    output = net(images)
+    # convert output probabilities to predicted class
+    _, preds_tensor = torch.max(output, 1)
+    preds = np.squeeze(preds_tensor.numpy())
+    return preds, [F.softmax(el, dim=0)[i].item() for i, el in zip(preds, output)]
+
+
+def plot_classes_preds(net, images, labels):
+    '''
+    Generates matplotlib Figure using a trained network, along with images
+    and labels from a batch, that shows the network's top prediction along
+    with its probability, alongside the actual label, coloring this
+    information based on whether the prediction was correct or not.
+    Uses the "images_to_probs" function.
+    '''
+    preds, probs = images_to_probs(net, images)
+    # plot the images in the batch, along with predicted and true labels
+    fig = plt.figure()
+    for idx in np.arange(4):
+        ax = fig.add_subplot(1, 4, idx+1, xticks=[], yticks=[])
+        matplotlib_imshow(images[idx], one_channel=True)
+        ax.set_title("{0}, {1:.1f}%\n(label: {2})".format(
+            classes[preds[idx]],
+            probs[idx] * 100.0,
+            classes[labels[idx]]),
+                    color=("green" if preds[idx]==labels[idx].item() else "red"))
+    return fig
 
 def train():
     cfg = opt.cfg
@@ -196,6 +246,11 @@ def train():
     model.gr = 0.0  # giou loss ratio (obj_loss = 1.0 or giou)
     model.class_weights = labels_to_class_weights(dataset.labels, nc).to(device)  # attach class weights
 
+    # add network graph plot in tensorboard-YARDEN
+    dataiter = iter(dataloader)
+    images, labels = dataiter.next()
+    writer.add_graph(model, images)
+
     # Model EMA
     # ema = torch_utils.ModelEMA(model, decay=0.9998)
 
@@ -300,6 +355,15 @@ def train():
             pbar.set_description(s)
 
             # end batch ------------------------------------------------------------------------------------------------
+
+            # ...log the running loss yarden
+            writer.add_scalar('training loss',   mloss ,  epoch * len(dataloader) + epoch)
+
+            # ...log a Matplotlib Figure showing the model's predictions on a
+            # random mini-batch
+            writer.add_figure('predictions vs. actuals',  plot_classes_preds(model, imgs, targets),
+                                global_step=epoch * len(dataloader) + i)
+            running_loss = 0.0
 
         # Update scheduler
         scheduler.step()
