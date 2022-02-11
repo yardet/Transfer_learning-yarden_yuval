@@ -357,7 +357,7 @@ def train():
             # end batch ------------------------------------------------------------------------------------------------
 
             # ...log the running loss yarden
-            writer.add_scalar('training loss',   mloss ,  epoch * len(dataloader) + epoch)
+            writer.add_scalar('training loss',   mloss ,  epoch * len(dataloader) + i)
 
             # ...log a Matplotlib Figure showing the model's predictions on a
             # random mini-batch
