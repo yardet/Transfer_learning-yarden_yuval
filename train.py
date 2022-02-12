@@ -368,8 +368,8 @@ def train():
 
             # ...log a Matplotlib Figure showing the model's predictions on a
             # random mini-batch
-            writer.add_figure('predictions vs. actuals',  plot_classes_preds(model, imgs, targets),
-                                global_step=epoch * len(dataloader) + i)
+           # writer.add_figure('predictions vs. actuals',  plot_classes_preds(model, imgs, targets),
+           #                     global_step=epoch * len(dataloader) + i)
             running_loss = 0.0
 
         # Update scheduler
