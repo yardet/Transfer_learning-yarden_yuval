@@ -53,7 +53,7 @@ if f:
 # helper function to show an image
 
 
-classes = ('HL', 'HR', 'YL', 'YR')
+classes = ('Racoon')
 
 # (used in the `plot_classes_preds` function below)
 def matplotlib_imshow(img, one_channel=False):
